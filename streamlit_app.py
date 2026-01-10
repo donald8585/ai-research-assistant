@@ -1,6 +1,5 @@
 import streamlit as st
-from crewai import Agent, Task, Crew, Process
-from langchain_cohere import ChatCohere
+from crewai import Agent, Task, Crew, Process, LLM
 from crewai_tools import SerperDevTool
 import os
 
@@ -33,7 +32,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("Built with CrewAI | By Alfred So")
 
-# Get API keys from secrets
+# Get API keys
 cohere_api_key = st.secrets.get("COHERE_API_KEY", "")
 serper_api_key = st.secrets.get("SERPER_API_KEY", "")
 
@@ -44,12 +43,10 @@ if not cohere_api_key or not serper_api_key:
     
     **1. Cohere (for AI):**
     - Visit: [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys)
-    - Sign up (no credit card!)
     - 1000 calls/month FREE
     
     **2. SerperDev (for search):**
     - Visit: [serper.dev](https://serper.dev)
-    - Sign up with Google
     - 2500 searches FREE
     
     **Add to Streamlit secrets:**
@@ -63,19 +60,14 @@ if not cohere_api_key or not serper_api_key:
 # Set environment variable for SerperDev
 os.environ["SERPER_API_KEY"] = serper_api_key
 
-# Initialize LLM
-@st.cache_resource
-def get_llm(api_key):
-    return ChatCohere(
-        cohere_api_key=api_key,
-        model="command-r7b-12-2024",
-        temperature=0.7,
-        max_tokens=2048
-    )
+# Initialize LLM using CrewAI's LLM class (NOT LangChain!)
+llm = LLM(
+    model="cohere/command-r7b-12-2024",
+    api_key=cohere_api_key,
+    temperature=0.7
+)
 
-llm = get_llm(cohere_api_key)
-
-# Initialize search tool (your original!)
+# Initialize search tool
 search_tool = SerperDevTool()
 
 # Define Agents
