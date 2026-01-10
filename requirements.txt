@@ -4,4 +4,5 @@ langchain>=0.1.0
 langchain-cohere>=0.1.0
 langchain-community>=0.0.13
 duckduckgo-search>=5.0.0
+ddgs>=1.0.0
 cohere>=5.0.0
