@@ -4,3 +4,4 @@ crewai-tools>=0.4.0
 langchain>=0.1.0
 langchain-cohere>=0.1.0
 cohere>=5.0.0
+litellm>=1.0.0
