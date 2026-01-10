@@ -1,0 +1,64 @@
+# Quick Start Guide
+
+## Step 1: Download All Files
+Download these 7 files and place them in:
+C:\Users\logos\OneDrive\文件\GitHub\ai-research-assistant\
+
+Files:
+1. agents.py
+2. tasks.py
+3. crew.py
+4. app.py
+5. requirements.txt
+6. .env.template
+7. README.md
+
+## Step 2: Setup Ollama
+Open a NEW terminal and run:
+```bash
+ollama pull llama3.1
+ollama serve
+```
+Keep this terminal running!
+
+## Step 3: Get Serper API Key
+1. Go to: https://serper.dev
+2. Sign up (free account)
+3. Copy your API key
+
+## Step 4: Create .env File
+1. Copy .env.template → .env
+2. Edit .env file
+3. Replace "your_serper_api_key_here" with your actual key
+4. Save file
+
+## Step 5: Install Python Packages
+In your project terminal (Git Bash):
+```bash
+cd /c/Users/logos/OneDrive/文件/GitHub/ai-research-assistant
+source venv/Scripts/activate
+pip install -r requirements.txt
+```
+
+## Step 6: Run the App
+```bash
+streamlit run app.py
+```
+
+## Troubleshooting
+
+**Error: "Ollama not running"**
+→ Make sure `ollama serve` is running in another terminal
+
+**Error: "SERPER_API_KEY not found"**
+→ Check your .env file has the correct API key
+
+**Error: "Module not found"**
+→ Run: `pip install -r requirements.txt`
+
+## Expected Timeline
+- Setup: 15 minutes
+- First test run: 3 minutes
+- Total: ~20 minutes
+
+Good luck! 🚀
