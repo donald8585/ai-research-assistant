@@ -1,7 +1,7 @@
 import streamlit as st
 from crewai import Agent, Task, Crew, Process
 from langchain_cohere import ChatCohere
-from langchain_community.tools import DuckDuckGoSearchRun
+from crewai_tools import SerperDevTool
 import os
 
 st.set_page_config(
@@ -28,31 +28,40 @@ with st.sidebar:
     st.markdown("**Tech Stack:**")
     st.markdown("- CrewAI")
     st.markdown("- Cohere (command-r7b)")
-    st.markdown("- DuckDuckGo Search")
+    st.markdown("- SerperDev API")
     
     st.markdown("---")
     st.markdown("Built with CrewAI | By Alfred So")
 
-# Get API key
+# Get API keys from secrets
 cohere_api_key = st.secrets.get("COHERE_API_KEY", "")
+serper_api_key = st.secrets.get("SERPER_API_KEY", "")
 
-if not cohere_api_key:
-    cohere_api_key = st.text_input(
-        "Cohere API Key", 
-        type="password",
-        help="Get FREE at dashboard.cohere.com/api-keys"
-    )
-
-if not cohere_api_key:
-    st.warning("⚠️ Please add your Cohere API key to continue!")
+if not cohere_api_key or not serper_api_key:
+    st.warning("⚠️ Please add API keys in Streamlit Cloud settings!")
     st.info("""
-    ### Get FREE Cohere API Key:
-    1. Visit: [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys)
-    2. Sign up (no credit card!)
-    3. Copy your API key
-    4. Paste above or add to Streamlit secrets
+    ### Get FREE API Keys:
+    
+    **1. Cohere (for AI):**
+    - Visit: [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys)
+    - Sign up (no credit card!)
+    - 1000 calls/month FREE
+    
+    **2. SerperDev (for search):**
+    - Visit: [serper.dev](https://serper.dev)
+    - Sign up with Google
+    - 2500 searches FREE
+    
+    **Add to Streamlit secrets:**
+    ```
+    COHERE_API_KEY = "your_cohere_key"
+    SERPER_API_KEY = "your_serper_key"
+    ```
     """)
     st.stop()
+
+# Set environment variable for SerperDev
+os.environ["SERPER_API_KEY"] = serper_api_key
 
 # Initialize LLM
 @st.cache_resource
@@ -60,54 +69,49 @@ def get_llm(api_key):
     return ChatCohere(
         cohere_api_key=api_key,
         model="command-r7b-12-2024",
-        temperature=0.7
+        temperature=0.7,
+        max_tokens=2048
     )
 
 llm = get_llm(cohere_api_key)
 
-# Initialize search tool
-search_tool = DuckDuckGoSearchRun()
+# Initialize search tool (your original!)
+search_tool = SerperDevTool()
 
 # Define Agents
-@st.cache_resource
-def create_agents(_llm):
-    researcher = Agent(
-        role="Senior Research Analyst",
-        goal="Uncover cutting-edge developments and trends in {topic}",
-        backstory="""You are an expert research analyst with years of experience in 
-        gathering and synthesizing information from various sources. You excel at 
-        finding accurate, relevant, and up-to-date information.""",
-        verbose=True,
-        allow_delegation=False,
-        llm=_llm,
-        tools=[search_tool]
-    )
-    
-    writer = Agent(
-        role="Technical Content Writer",
-        goal="Create comprehensive, well-structured technical reports on {topic}",
-        backstory="""You are a skilled technical writer who specializes in creating 
-        clear, engaging, and informative content. You excel at organizing complex 
-        information into readable reports.""",
-        verbose=True,
-        allow_delegation=False,
-        llm=_llm
-    )
-    
-    critic = Agent(
-        role="Quality Assurance Critic",
-        goal="Review and polish reports to ensure highest quality standards",
-        backstory="""You are a meticulous editor and quality assurance specialist. 
-        You have a keen eye for detail and ensure all reports are accurate, 
-        well-formatted, and professionally written.""",
-        verbose=True,
-        allow_delegation=False,
-        llm=_llm
-    )
-    
-    return researcher, writer, critic
+researcher = Agent(
+    role="Senior Research Analyst",
+    goal="Uncover cutting-edge developments and trends in {topic}",
+    backstory="""You are an expert research analyst with years of experience in 
+    gathering and synthesizing information from various sources. You excel at 
+    finding accurate, relevant, and up-to-date information using web search.""",
+    verbose=True,
+    allow_delegation=False,
+    llm=llm,
+    tools=[search_tool]
+)
 
-researcher, writer, critic = create_agents(llm)
+writer = Agent(
+    role="Technical Content Writer",
+    goal="Create comprehensive, well-structured technical reports on {topic}",
+    backstory="""You are a skilled technical writer who specializes in creating 
+    clear, engaging, and informative content. You excel at organizing complex 
+    information into readable, professional reports.""",
+    verbose=True,
+    allow_delegation=False,
+    llm=llm
+)
+
+critic = Agent(
+    role="Quality Assurance Critic",
+    goal="Review and polish reports to ensure highest quality standards",
+    backstory="""You are a meticulous editor and quality assurance specialist. 
+    You have a keen eye for detail and ensure all reports are accurate, 
+    well-formatted, and professionally written.""",
+    verbose=True,
+    allow_delegation=False,
+    llm=llm
+)
 
 # Research form
 with st.form("research_form"):
@@ -121,21 +125,19 @@ with st.form("research_form"):
 if submitted and topic:
     st.markdown("---")
     
-    # Progress tracking
-    progress_container = st.empty()
-    status_container = st.empty()
-    
     try:
-        with st.spinner("🔍 Research in progress..."):
+        with st.spinner("🔍 Research in progress... This may take 60-90 seconds"):
+            
             # Define tasks
             research_task = Task(
-                description=f"""Research {topic}. Focus on:
-                1. Latest developments and trends
-                2. Key tools and technologies
-                3. Best practices and recommendations
-                4. Reliable sources and data
+                description=f"""Research {topic} using web search. Focus on:
+                1. Latest developments and trends in 2026
+                2. Key tools, technologies, and platforms
+                3. Best practices and industry recommendations
+                4. Reliable sources and current data
                 
-                Gather comprehensive information from multiple sources.""",
+                Use the search tool to gather comprehensive, accurate, up-to-date information.
+                Include specific examples, version numbers, and sources.""",
                 agent=researcher,
                 expected_output="Detailed research findings with sources"
             )
@@ -143,12 +145,26 @@ if submitted and topic:
             write_task = Task(
                 description=f"""Using the research findings, write a comprehensive report on {topic}.
                 
-                Structure:
-                1. Executive Summary
-                2. Key Findings (with bullet points)
-                3. Detailed Analysis
-                4. Conclusion
-                5. Sources
+                Required Structure:
+                # [Report Title]
+                
+                ## Executive Summary
+                Brief overview (2-3 sentences)
+                
+                ## Key Findings
+                - Finding 1
+                - Finding 2
+                - Finding 3
+                (Use bullet points)
+                
+                ## Detailed Analysis
+                Comprehensive discussion with examples
+                
+                ## Conclusion
+                Summary and recommendations
+                
+                ## Sources
+                List sources found during research
                 
                 Make it clear, professional, and well-formatted in markdown.""",
                 agent=writer,
@@ -159,20 +175,21 @@ if submitted and topic:
                 description="""Review the report for:
                 1. Accuracy and completeness
                 2. Clarity and readability
-                3. Proper formatting
+                3. Proper markdown formatting
                 4. Grammar and spelling
+                5. Professional tone
                 
                 Polish and finalize the report.""",
                 agent=critic,
                 expected_output="Final polished report in markdown"
             )
             
-            # Create and run crew
+            # Create crew
             crew = Crew(
                 agents=[researcher, writer, critic],
                 tasks=[research_task, write_task, review_task],
                 process=Process.sequential,
-                verbose=True
+                verbose=False
             )
             
             # Execute
@@ -190,24 +207,31 @@ if submitted and topic:
         # Download button
         st.download_button(
             label="📥 Download Report",
-            data=result,
+            data=str(result),
             file_name=f"{topic.replace(' ', '_')}_report.md",
-            mime="text/markdown"
+            mime="text/markdown",
+            use_container_width=True
         )
         
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
+        
+        import traceback
+        with st.expander("🐛 Technical Details"):
+            st.code(traceback.format_exc())
+        
         st.info("""
-        💡 **Common issues:**
-        - Make sure your Cohere API key is valid
-        - CrewAI agents may take 30-60 seconds to complete
-        - Try a simpler topic if it fails
+        💡 **Troubleshooting:**
+        - Check both API keys are valid
+        - Agents take 60-90 seconds
+        - SerperDev free tier: 2500 searches
+        - Cohere free tier: 1000 calls/month
         """)
 
 # Footer
 st.markdown("---")
 st.markdown("### 💡 Tips:")
 st.markdown("- Be specific with your research topic")
-st.markdown("- Agent workflow takes 30-90 seconds")
-st.markdown("- Reports are generated in markdown format")
+st.markdown("- Agents perform LIVE web searches")
+st.markdown("- Results include current 2026 data")
 st.markdown("- Download reports for later reference")
