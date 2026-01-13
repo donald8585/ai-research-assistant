@@ -1,3 +1,15 @@
+---
+title: AI Research Assistant
+emoji: 🔬
+colorFrom: blue
+colorTo: purple
+sdk: streamlit
+sdk_version: 1.25.0
+app_file: app.py
+pinned: false
+---
+
+
 # 🤖 AI Research Assistant - Multi-Agent System
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
